@@ -136,16 +136,124 @@ dichas tiendas. El listado deberá mostrar dos columnas: población de la tienda
 indica en la columna vnt_clt). El listado deberá ordenarse por la segunda columna de
 manera descendente.
 
+select tda_pob, count(DISTINCT vnt_clt) 
+from clientes, ventas, tiendas 
+where clt_num = vnt_clt and tda_num = vnt_tda 
+group by tda_num 
+order by count(distinct vnt_clt) desc;
++---------------+-------------------------+
+| tda_pob       | count(DISTINCT vnt_clt) |
++---------------+-------------------------+
+| Barcelona     |                       5 |
+| Valencia      |                       3 |
+| Lyon          |                       3 |
+| Pamplona      |                       3 |
+| Madrid-batan  |                       2 |
+| Gerona        |                       2 |
+| Requena       |                       1 |
+| Trujillo      |                       1 |
+| Madrid-centro |                       1 |
+| París         |                       1 |
+| Palencia      |                       1 |
+| Jaen          |                       1 |
+| Jerez         |                       1 |
++---------------+-------------------------+
+
 
 8. Listado de ventas que muestre para cada color la cantidad de artículos vendidos de ese
 color y la cantidad de artículos diferentes. Ordene la consulta por la segunda y tercera
 columna de manera descendente.
 
-
-
-
+select art_col,count(vnt_art) 'articulos vendidos',count(distinct art_nom) 'articulos distintos' 
+from ventas, articulos 
+where art_num = vnt_art 
+group by art_col 
+order by count(vnt_art) desc, count(DISTINCT art_nom) desc;
++---------+--------------------+---------------------+
+| art_col | articulos vendidos | articulos distintos |
++---------+--------------------+---------------------+
+| blanco  |                 16 |                   1 |
+| negro   |                  9 |                   2 |
+| rojo    |                  6 |                   4 |
+| azul    |                  3 |                   3 |
+| verde   |                  3 |                   2 |
+| NULL    |                  1 |                   1 |
++---------+--------------------+---------------------+
 
 9. Listado de artículos vendidos por cada proveedor. El listado mostrará dos columnas: el
 nombre del proveedor y la cantidad de ventas de los artículos de cada proveedor.
+
+select prv_nom, count(vnt_art) 
+from ventas, proveedores, articulos 
+where art_num = vnt_art and prv_num = art_prv 
+group by art_prv;
++------------------------+----------------+
+| prv_nom                | count(vnt_art) |
++------------------------+----------------+
+| catio electronic       |              8 |
+| estilografica reunidas |              7 |
+| mecanica de precision  |              3 |
+| sanjita                |             17 |
+| electrolamp            |              3 |
++------------------------+----------------+
+
+10. Listado que muestre la siguiente información de las ventas. Las columnas deben
+mostrar la información y cabeceras tal y como se muestran en el siguiente ejemplo.
+Ordene el resultado por fecha de manera ascendente.
+
+    Cliente         Tienda      Artículo    Cantidad    Fecha
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Fernando Alonso     Gerona      grapadora       1       2019-10-06
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Antoni Llopis       Barcelona   lampara         1       2019-10-15
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Pablo Gómez         Pamplona    boligrafo       1       2019-10-15
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        ...             ...         ...         ...         ...
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+select concat(clt_nom,' ', clt_apell) 'Cliente', tda_pob 'Tienda',art_nom 'Articulo', vnt_cant 'Cantidad', vnt_fch 'Fecha'
+from clientes, ventas, tiendas, articulos
+where tda_num = vnt_art and vnt_clt = clt_num and art_num = vnt_art;
++------------------+---------------+-------------------+----------+------------+
+| Cliente          | Tienda        | Articulo          | Cantidad | Fecha      |
++------------------+---------------+-------------------+----------+------------+
+| Michel Dupreit   | Madrid-batan  | impresora         |        8 | 2019-12-22 |
+| Gerad Courbon    | Madrid-centro | calculadora       |        1 | 2019-10-25 |
+| Margarita Borras | Madrid-centro | calculadora       |        1 | 2019-11-09 |
+| Pau Roca         | Madrid-centro | calculadora       |     NULL | 2020-03-03 |
+| Antoni Llopis    | Madrid-centro | calculadora       |        2 | 2020-04-29 |
+| Antoni Llopis    | Madrid-centro | calculadora       |        2 | 2020-04-29 |
+| Antoni Llopis    | Madrid-centro | calculadora       |        2 | 2020-04-29 |
+| Antoni Llopis    | Madrid-centro | calculadora       |        2 | 2020-04-29 |
+| Antoni Llopis    | Madrid-centro | calculadora       |        2 | 2020-04-29 |
+| Marcel Souris    | Pamplona      | calendario        |        2 | 2019-10-30 |
+| Diego Cortes     | Pamplona      | calendario        |        1 | 2019-11-05 |
+| Margarita Borras | Pamplona      | calendario        |        3 | 2020-01-20 |
+| Pablo Goméz      | Pamplona      | calendario        |        1 | 2020-02-03 |
+| Michel Dupreit   | Pamplona      | calendario        |        6 | 2020-02-04 |
+| Pau Roca         | Pamplona      | calendario        |        1 | 2020-02-06 |
+| Marcel Souris    | Pamplona      | calendario        |        1 | 2020-02-11 |
+| Jean Dupont      | Pamplona      | calendario        |        2 | 2020-02-16 |
+| Consuelo Roman   | Pamplona      | calendario        |        1 | 2020-02-21 |
+| Miguel Perez     | Pamplona      | calendario        |        4 | 2020-02-22 |
+| Gerad Courbon    | Pamplona      | calendario        |        1 | 2020-02-29 |
+| Antoni Llopis    | Pamplona      | calendario        |        3 | 2020-02-29 |
+| Jose Mari Bigote | Pamplona      | calendario        |        1 | 2020-03-03 |
+| Jesus Ubrique    | Pamplona      | calendario        |       10 | 2020-03-03 |
+| Sophie Mazapato  | Pamplona      | calendario        |        1 | 2020-03-03 |
+| Jean Dupont      | Pamplona      | calendario        |     NULL | 2020-03-03 |
+| Antoni Llopis    | Barcelona     | lampara           |        1 | 2019-10-15 |
+| Diego Cortes     | Barcelona     | lampara           |        1 | 2019-11-02 |
+| Jean Dupont      | Jaen          | lampara           |        1 | 2020-01-11 |
+| Jean Dupont      | Palencia      | pesacartas 1-1000 |        2 | 2020-01-11 |
+| Pablo Goméz      | Gerona        | boligrafo         |        1 | 2019-10-15 |
+| Michel Dupreit   | Gerona        | boligrafo         |        7 | 2019-12-22 |
+| Pablo Goméz      | Lyon          | boligrafo         |        2 | 2019-10-15 |
+| Margarita Borras | París         | boligrafo lujo    |        1 | 2019-12-02 |
+| Margarita Borras | Jerez         | boligrafo lujo    |       10 | 2019-12-12 |
+| Pablo Goméz      | Palencia      | boligrafo vulgar  |        3 | 2019-10-16 |
+| Marcel Souris    | Barcelona     | boligrafo lujo    |        2 | 2019-11-02 |
++------------------+---------------+-------------------+----------+------------+
 
 
