@@ -146,24 +146,75 @@ Madrid. El listado debe mostrar para cada tienda la siguiente información:
 Población, Gerente, Número de ventas realizada, media de cantidad vendida en cada
 venta. Las tiendas de Madrid no deberán aparecer en el listado.
 
-
+select tda_pob, tda_ger, count(vnt_tda) 
+from tiendas join ventas on tda_num = vnt_tda 
+where tda_pob not like 'Madrid%' 
+group by tda_num 
+having count(vnt_tda) > ANY (
+    select count(vnt_tda) 
+    from ventas, tiendas 
+    where tda_num = vnt_tda and tda_pob like 'Madrid%' 
+    group by tda_num);
++-----------+------------------------+----------------+
+| tda_pob   | tda_ger                | count(vnt_tda) |
++-----------+------------------------+----------------+
+| Pamplona  | Dominguez, Julian      |              7 |
+| Barcelona | Parraquet, Juan Carlos |              7 |
+| Valencia  | Petit, Joan            |              4 |
+| Lyon      | Madoux, Jean           |              4 |
++-----------+------------------------+----------------+
 
 
 17. Listado de clientes de Madrid que han comprado algún producto del proveedor
 ‘electrolamp’.
 
-
-
+select * 
+from ventas join clientes on clt_num = vnt_clt 
+where clt_pob = 'Madrid' and vnt_art in (
+    select art_num 
+    from articulos join proveedores 
+    where prv_num = art_prv and prv_nom = 'electrolamp');
++---------+---------+---------+----------+------------+---------+-----------+---------+----------+---------+
+| VNT_CLT | VNT_TDA | VNT_ART | VNT_CANT | VNT_FCH    | CLT_NUM | CLT_APELL | CLT_NOM | CLT_PAIS | CLT_POB |
++---------+---------+---------+----------+------------+---------+-----------+---------+----------+---------+
+|      13 |       1 |       4 |        1 | 2019-11-02 |      13 | Cortes    | Diego   | e        | Madrid  |
++---------+---------+---------+----------+------------+---------+-----------+---------+----------+---------+
 
 18. Listado de tiendas en las que han comprado clientes cuya población no sea ni Madrid ni
 Barcelona. El listado deberá mostrar la cantidad de ventas realizada por cada tienda.
 
-
-
+select * 
+from tiendas join ventas on vnt_tda = tda_num 
+where vnt_clt not in (
+    select clt_num 
+    from clientes 
+    where clt_pob not in ('Madrid', 'Barcelona')) 
+group by tda_num;
++---------+---------------+------------------------+---------+---------+---------+----------+------------+
+| TDA_NUM | TDA_POB       | TDA_GER                | VNT_CLT | VNT_TDA | VNT_ART | VNT_CANT | VNT_FCH    |
++---------+---------------+------------------------+---------+---------+---------+----------+------------+
+|       1 | Madrid-batan  | Contesfosques, Jordi   |      13 |       1 |       4 |        1 | 2019-11-02 |
+|       2 | Madrid-centro | Martinez, Juan         |       1 |       2 |       2 |        1 | 2019-11-09 |
+|       3 | Pamplona      | Dominguez, Julian      |       2 |       3 |       3 |        4 | 2020-02-22 |
+|       4 | Barcelona     | Parraquet, Juan Carlos |       5 |       4 |       4 |        1 | 2019-10-15 |
+|       6 | Jaen          | Marin, Raquel          |       5 |       6 |       3 |        3 | 2020-02-29 |
++---------+---------------+------------------------+---------+---------+---------+----------+------------+
 
 19. Listado de artículos vendidos en la campaña de navidad 2019-20. La campaña de
 navidad va del 6 de diciembre al 6 de enero. Interesa conocer la cantidad vendida de
 cada artículo y cuál fue la última fecha de compra del mismo.
+
+select art_nom, sum(vnt_cant), max(vnt_fch) 
+from articulos join ventas on art_num = vnt_art 
+where vnt_fch between '2019-12-06' and '2020-01-06' 
+group by art_num;
++----------------+---------------+--------------+
+| art_nom        | sum(vnt_cant) | max(vnt_fch) |
++----------------+---------------+--------------+
+| impresora      |             8 | 2019-12-22   |
+| boligrafo      |             7 | 2019-12-22   |
+| boligrafo lujo |            10 | 2019-12-12   |
++----------------+---------------+--------------+
 
 
 
@@ -172,3 +223,55 @@ ha comprado algún objeto y el total en euros que se ha gastado. Si un cliente n
 realizado ninguna compra debe aparecer también en la tabla indicado que se ha
 gastado 0 €. Lo que un cliente se ha gastado en una venta es el producto de la columna
 art_pv con la columna vnt_cant (precio de venta por la cantidad comprada).
+
+select clt_nom, clt_apell, art_num, art_nom, count(art_num) 'ventas' , ifnull(round(vnt_cant*art_pv,2),0) 'total gastado' 
+from clientes left outer join ventas on clt_num = vnt_clt left outer join articulos on vnt_art = art_num 
+group by clt_num, art_num;
++-----------+-------------+---------+-------------------+--------+---------------+
+| clt_nom   | clt_apell   | art_num | art_nom           | ventas | total gastado |
++-----------+-------------+---------+-------------------+--------+---------------+
+| Margarita | Borras      |       2 | calculadora       |      1 |         20.00 |
+| Margarita | Borras      |       3 | calendario        |      1 |         12.00 |
+| Margarita | Borras      |      12 | boligrafo lujo    |      1 |          3.00 |
+| Margarita | Borras      |      13 | boligrafo lujo    |      1 |         39.90 |
+| Miguel    | Perez       |       3 | calendario        |      1 |         16.00 |
+| Jean      | Dupont      |       3 | calendario        |      2 |          8.00 |
+| Jean      | Dupont      |       6 | lampara           |      1 |         36.00 |
+| Jean      | Dupont      |       9 | pesacartas 1-1000 |      1 |         18.00 |
+| Michel    | Dupreit     |       1 | impresora         |      1 |       4640.00 |
+| Michel    | Dupreit     |       3 | calendario        |      1 |         24.00 |
+| Michel    | Dupreit     |      10 | boligrafo         |      1 |          7.00 |
+| Antoni    | Llopis      |       2 | calculadora       |      5 |         40.00 |
+| Antoni    | Llopis      |       3 | calendario        |      1 |         12.00 |
+| Antoni    | Llopis      |       4 | lampara           |      1 |         33.00 |
+| Marcel    | Souris      |       3 | calendario        |      2 |          8.00 |
+| Marcel    | Souris      |      15 | boligrafo lujo    |      1 |          9.98 |
+| Pablo     | Goméz       |       3 | calendario        |      1 |          4.00 |
+| Pablo     | Goméz       |      10 | boligrafo         |      1 |          1.00 |
+| Pablo     | Goméz       |      11 | boligrafo         |      1 |          2.00 |
+| Pablo     | Goméz       |      14 | boligrafo vulgar  |      1 |         14.97 |
+| Gerad     | Courbon     |       2 | calculadora       |      1 |         20.00 |
+| Gerad     | Courbon     |       3 | calendario        |      1 |          4.00 |
+| Consuelo  | Roman       |       3 | calendario        |      1 |          4.00 |
+| Pau       | Roca        |       2 | calculadora       |      1 |          0.00 |
+| Pau       | Roca        |       3 | calendario        |      1 |          4.00 |
+| Jorge     | Mancha      |    NULL | NULL              |      0 |          0.00 |
+| Pablo     | Curro       |    NULL | NULL              |      0 |          0.00 |
+| Diego     | Cortes      |       3 | calendario        |      1 |          4.00 |
+| Diego     | Cortes      |       4 | lampara           |      1 |         33.00 |
+| Joaquin   | Fernandez   |    NULL | NULL              |      0 |          0.00 |
+| Jacinto   | Duran       |    NULL | NULL              |      0 |          0.00 |
+| Pedro     | Minguin     |    NULL | NULL              |      0 |          0.00 |
+| Jesus     | Ubrique     |       3 | calendario        |      1 |         40.00 |
+| Sophie    | Mazapato    |       3 | calendario        |      1 |          4.00 |
+| Jose Mari | Bigote      |       3 | calendario        |      1 |          4.00 |
+| Romualdo  | Dalima      |    NULL | NULL              |      0 |          0.00 |
+| Paco      | Clavel rojo |    NULL | NULL              |      0 |          0.00 |
+| Fernando  | Alonso      |      17 | grapadora         |      1 |         15.60 |
+| Pedrito   | Rodriguez   |    NULL | NULL              |      0 |          0.00 |
+| Mar       | Florero     |    NULL | NULL              |      0 |          0.00 |
+| Mar       | Florero     |    NULL | NULL              |      0 |          0.00 |
+| Leo       | Peralta     |      17 | grapadora         |      1 |         31.20 |
+| Pablo     | Santos      |    NULL | NULL              |      0 |          0.00 |
++-----------+-------------+---------+-------------------+--------+---------------+
+
