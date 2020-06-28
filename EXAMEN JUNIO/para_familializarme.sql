@@ -2,30 +2,35 @@
 
 select * 
 from empleados 
-where empleados.oficinaId not in (
+where empleados.oficinaId in (
     select OficinaId 
     from oficinas 
     where pais != 'USA');
-+------------+-----------+----------+-----------+---------------------------------+
-| empleadoId | apellido  | nombre   | extension | email                           | 
-+------------+-----------+----------+-----------+---------------------------------+
-|       1002 | Murphy    | Diane    | x5800     | dmurphy@classicmodelcars.com    |
-|       1056 | Patterson | Mary     | x4611     | mpatterso@classicmodelcars.com  | 
-|       1076 | Firrelli  | Jeff     | x9273     | jfirrelli@classicmodelcars.com  | 
-|       1143 | Bow       | Anthony  | x5428     | abow@classicmodelcars.com       | 
-|       1165 | Jennings  | Leslie   | x3291     | ljennings@classicmodelcars.com  | 
-|       1166 | Thompson  | Leslie   | x4065     | lthompson@classicmodelcars.com  |
-|       1188 | Firrelli  | Julie    | x2173     | jfirrelli@classicmodelcars.com  |  
-|       1216 | Patterson | Steve    | x4334     | spatterson@classicmodelcars.com |   
-|       1286 | Tseng     | Foon Yue | x2248     | ftseng@classicmodelcars.com     |
-|       1323 | Vanauf    | George   | x4102     | gvanauf@classicmodelcars.com    | 
-+------------+-----------+----------+-----------+---------------------------------+
+
++------------+-----------+---------+-----------+---------------------------------+-----------+-------------+----------------------+
+| empleadoId | apellido  | nombre  | extension | email                           | oficinaId | responsable | puesto               |
++------------+-----------+---------+-----------+---------------------------------+-----------+-------------+----------------------+
+|       1102 | Bondur    | Gerard  | x5408     | gbondur@classicmodelcars.com    | 4         |        1056 | Sale Manager (EMEA)  |
+|       1337 | Bondur    | Loui    | x6493     | lbondur@classicmodelcars.com    | 4         |        1102 | Sales Rep            |
+|       1370 | Hernandez | Gerard  | x2028     | ghernande@classicmodelcars.com  | 4         |        1102 | Sales Rep            |
+|       1401 | Castillo  | Pamela  | x2759     | pcastillo@classicmodelcars.com  | 4         |        1102 | Sales Rep            |
+|       1702 | Gerard    | Martin  | x2312     | mgerard@classicmodelcars.com    | 4         |        1102 | Sales Rep            |
+|       1621 | Nishi     | Mami    | x101      | mnishi@classicmodelcars.com     | 5         |        1056 | Sales Rep            |
+|       1625 | Kato      | Yoshimi | x102      | ykato@classicmodelcars.com      | 5         |        1621 | Sales Rep            |
+|       1088 | Patterson | William | x4871     | wpatterson@classicmodelcars.com | 6         |        1056 | Sales Manager (APAC) |
+|       1611 | Fixter    | Andy    | x101      | afixter@classicmodelcars.com    | 6         |        1088 | Sales Rep            |
+|       1612 | Marsh     | Peter   | x102      | pmarsh@classicmodelcars.com     | 6         |        1088 | Sales Rep            |
+|       1619 | King      | Tom     | x103      | tking@classicmodelcars.com      | 6         |        1088 | Sales Rep            |
+|       1501 | Bott      | Larry   | x2311     | lbott@classicmodelcars.com      | 7         |        1102 | Sales Rep            |
+|       1504 | Jones     | Barry   | x102      | bjones@classicmodelcars.com     | 7         |        1102 | Sales Rep            |
++------------+-----------+---------+-----------+---------------------------------+-----------+-------------+----------------------+
 
 2.Listado de clientes que no ha realizado ningún pedido.
 
 select clienteNombre 
-from clientes 
+from clientes c 
 where clienteId not in (select clienteId from pedidos);
+where not exists (select clienteId from pedidos p where p.clienteId = c.clienteId);
 +--------------------------------+
 | clienteNombre                  |
 +--------------------------------+
@@ -56,7 +61,7 @@ where clienteId not in (select clienteId from pedidos);
 +--------------------------------+
 
 3.Listado que muestre la cantidad de artículos que hay de cada categoría.
-select categoriaId,stock 
+select categoriaId,sum(stock) 
 from productos 
 group by categoriaId;
 +----------------------+-------+
@@ -113,21 +118,68 @@ group by clientes.pais;
 
 6.Listado de productos más vendidos de cada categoría. De cada producto se desea saber su código id, nombre y categoría, además del total de ventas.
 
-select productos.productoId, productoNombre, categoriaId, count(pedidodetalles.pedidoId) 
-from productos, pedidodetalles 
-where productos.productoId = pedidodetalles.productoId 
-group by productos.categoriaId;
-+------------+---------------------------------------+----------------------+--------------------------------+
-| productoId | productoNombre                        | categoriaId          | count(pedidodetalles.pedidoId) |
-+------------+---------------------------------------+----------------------+--------------------------------+
-| S18_1662   | 1980s Black Hawk Helicopter           | Aviones              |                            336 |
-| S18_3029   | 1999 Yamaha Speed Boat                | Barcos               |                            245 |
-| S12_1666   | 1958 Setra Bus                        | Camiones y Autobuses |                            308 |
-| S10_1949   | 1952 Alpine Renault 1300              | Coches clásicos      |                           1010 |
-| S18_1342   | 1937 Lincoln Berline                  | Coches Vintage       |                            657 |
-| S10_1678   | 1969 Harley Davidson Ultimate Chopper | Motociletas          |                            359 |
-| S18_3259   | Collectable Wooden Train              | Trenes               |                             81 |
-+------------+---------------------------------------+----------------------+--------------------------------+
+select p.productoId, p.productoNombre, p.categoriaId, sum(pd.cantidadPedida)
+from productos p, pedidodetalles pd
+where p.productoId = pd.productoId and pd.cantidadPedida = (
+    select max(pd_.cantidadPedida)
+    from pedidodetalles pd_ join productos p_ on p_.productoId = pd_.productoId
+    where p_.categoriaId = p.categoriaId
+    )
+group by p.categoriaId;
++------------+---------------------------------------+----------------------+------------------------+
+| productoId | productoNombre                        | categoriaId          | sum(pd.cantidadPedida) |
++------------+---------------------------------------+----------------------+------------------------+
+| S700_2466  | America West Airlines B757-200        | Aviones              |                     85 |
+| S700_2047  | HMS Bounty                            | Barcos               |                     55 |
+| S24_2300   | 1962 Volkswagen Microbus              | Camiones y Autobuses |                     70 |
+| S12_4675   | 1969 Dodge Charger                    | Coches clásicos      |                     97 |
+| S18_1749   | 1917 Grand Touring Sedan              | Coches Vintage       |                     76 |
+| S10_1678   | 1969 Harley Davidson Ultimate Chopper | Motociletas          |                    198 |
+| S50_1514   | 1962 City of Detroit Streetcar        | Trenes               |                     51 |
++------------+---------------------------------------+----------------------+------------------------+
+
+
+7. Clientes que hayan pedido la mayor cantidad de un producto de cada categoria
+
+8. Listado de oficinas que tengan clientes de francia(France)
+
+select distinct(o.oficinaId), o.ciudad
+from oficinas o 
+where o.oficinaId in (
+    select e.oficinaId
+    from empleados e join clientes c on c.empleadoNumero = e.empleadoId
+    where c.pais = 'France'
+)
+
+
+
+
+9. Listado de clientes de españa que hayan pedido aviones o motocicletas
+
+select distinct(c.clienteId), c.clienteNombre
+from clientes c, pedidos p, pedidodetalles pd
+where c.clienteId = p.clienteId and p.pedidoId = pd.pedidoId and c.pais= 'Spain' and pd.productoId in (
+
+    select p_.productoId
+    from productos p_
+    where p_.categoriaId = 'Aviones' or p_.categoriaId = 'Motocicletas'
+)
+group by clienteId;
+
++-----------+------------------------+
+| clienteId | clienteNombre          |
++-----------+------------------------+
+|       141 | Euro+ Shopping Channel |
+|       216 | Enaco Distributors     |
++-----------+------------------------+
+
+/* O poner distict o poner group by*/
+
+
+
+
+
+
 
 
 
