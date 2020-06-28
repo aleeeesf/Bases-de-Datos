@@ -141,6 +141,28 @@ group by p.categoriaId;
 
 7. Clientes que hayan pedido la mayor cantidad de un producto de cada categoria
 
+select distinct(c.clienteId), c.clienteNombre, pr.productoNombre, pr.categoriaId
+from clientes c, pedidos p, pedidodetalles pd, productos pr
+where c.clienteId = p.clienteId and p.pedidoId = pd.pedidoId and pd.productoId = pr.productoId and pd.cantidadpedida =
+    (
+    select max(pd_.cantidadPedida)
+    from pedidodetalles pd_ join productos p_ on p_.productoId = pd_.productoId
+    where p_.categoriaId = pr.categoriaId
+    )
+group by pr.categoriaId;
+
++-----------+---------------------------+---------------------------------------+----------------------+
+| clienteId | clienteNombre             | productoNombre                        | categoriaId          |
++-----------+---------------------------+---------------------------------------+----------------------+
+|       328 | Tekni Collectables Inc.   | America West Airlines B757-200        | Aviones              |
+|       398 | Tokyo Collectables, Ltd   | HMS Bounty                            | Barcos               |
+|       141 | Euro+ Shopping Channel    | 1962 Volkswagen Microbus              | Camiones y Autobuses |
+|       209 | Mini Caravy               | 1969 Dodge Charger                    | Coches clásicos      |
+|       450 | The Sharp Gifts Warehouse | 1917 Grand Touring Sedan              | Coches Vintage       |
+|       141 | Euro+ Shopping Channel    | 1969 Harley Davidson Ultimate Chopper | Motociletas          |
+|       175 | Gift Depot Inc.           | 1962 City of Detroit Streetcar        | Trenes               |
++-----------+---------------------------+---------------------------------------+----------------------+
+
 8. Listado de oficinas que tengan clientes de francia(France)
 
 select distinct(o.oficinaId), o.ciudad
@@ -149,16 +171,19 @@ where o.oficinaId in (
     select e.oficinaId
     from empleados e join clientes c on c.empleadoNumero = e.empleadoId
     where c.pais = 'France'
-)
+);
 
-
-
++-----------+--------+
+| oficinaId | ciudad |
++-----------+--------+
+| 4         | Paris  |
++-----------+--------+
 
 9. Listado de clientes de españa que hayan pedido aviones o motocicletas
 
 select distinct(c.clienteId), c.clienteNombre
 from clientes c, pedidos p, pedidodetalles pd
-where c.clienteId = p.clienteId and p.pedidoId = pd.pedidoId and c.pais= 'Spain' and pd.productoId in (
+where c.clienteId = p.clienteId and p.pedidoId = pd.pedidoId and c.pais = 'Spain' and pd.productoId in (
 
     select p_.productoId
     from productos p_
